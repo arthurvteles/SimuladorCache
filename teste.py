@@ -1,6 +1,7 @@
 with open('bin_100.bin', 'rb') as file:
-    data = file.read()
-    print(data) 
-
-for i in range(len(data)):
-    print(data[i])
+    n_bits_ofsset = 2
+    entrada = file.read(4)
+    number = int.from_bytes(entrada, byteorder='big', signed=False)
+    endereco = format(number, '032b')
+    offest = endereco[32-n_bits_ofsset:32]
+    print(offest)

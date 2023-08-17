@@ -1,11 +1,13 @@
 import sys
-from math import log2
+import math 
 
 memory = []
 n_bits_offset = 0
 n_bits_tag = 0 
 n_bits_indice = 0
-
+n_hits = 0
+n_misses = 0
+n_misses_compulsorio = 0
 
 def main():
     if (len(sys.argv) != 7):
@@ -31,9 +33,8 @@ def main():
 
     cache(nsets,assoc)
     calc_bits(nsets, bsize)
-
-	
-
+    calc_bits(nsets, bsize)
+    run(arquivoEntrada)
 
 
 if __name__ == '__main__':
@@ -56,14 +57,19 @@ def cache(nsets, assoc):
 def calc_bits(nsets, bsize): 
     global n_bits_offset ,n_bits_tag ,n_bits_indice  
 
-    n_bits_offset = math.log2(bsize)
-    n_bits_tag = math.log2(nsets)
-    n_bits_indice = 32 - n_bits_offset - n_bits_tag
+    n_bits_offset =int (math.log2(bsize))
+    n_bits_tag = int (math.log2(nsets))
+    n_bits_indice =int (32 - n_bits_offset - n_bits_tag)
 
+def run(arquivoEntrada):
+     
+    global memory, n_bits_offset,n_bits_tag ,n_bits_indice ,n_hits ,n_misses ,n_misses_compulsorio
+
+    arquivo = open(arquivoEntrada,'rb') 
+    
 
 
     
-	    
 
 
 	
