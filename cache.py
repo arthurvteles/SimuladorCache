@@ -8,6 +8,7 @@ n_bits_indice = 0
 n_hits = 0
 n_misses = 0
 n_misses_compulsorio = 0
+n_acess = 0
 
 def main():
     if (len(sys.argv) != 7):
@@ -32,7 +33,6 @@ def main():
     print("arquivo =", arquivoEntrada)
 
     cache(nsets,assoc)
-    calc_bits(nsets, bsize)
     calc_bits(nsets, bsize)
     run(arquivoEntrada)
 
@@ -63,11 +63,29 @@ def calc_bits(nsets, bsize):
 
 def run(arquivoEntrada):
      
-    global memory, n_bits_offset,n_bits_tag ,n_bits_indice ,n_hits ,n_misses ,n_misses_compulsorio
+    global memory, n_bits_offset,n_bits_tag ,n_bits_indice ,n_hits ,n_misses ,n_misses_compulsorio, n_acess
 
     arquivo = open(arquivoEntrada,'rb') 
-    
+    #lemos de 4 em 4 pois o endereço é de 32 bits
+    entrada = arquivo.read(4)
+    while entrada: 
+        n_acess += 1 
+        #converte cada linha em um inteiro 
+        entrada_int = int.from_bytes(entrada, byteorder='big', signed=False)
+        #transforma o número em um binario de 32 bits 
+        endereco = format(entrada_int,'032b')
+        #Obter o offset 
+        offset = endereco[32-n_bits_offset:32]
+        #Obter o indice
+        index = endereco[32-n_bits_offset-n_bits_indice:32-offset]
+        #Obter a tag 
+        tag = endereco[:32-offset-index]
+        
 
+        #Lê mais 4 posições 
+        entrada = arquivo.read(4)
+
+        
 
     
 
