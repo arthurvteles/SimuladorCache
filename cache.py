@@ -1,5 +1,6 @@
 import sys
 import math 
+import random 
 
 memory = []
 n_bits_offset = 0
@@ -82,25 +83,45 @@ def run(arquivoEntrada, n_sets,assoc):
         tag = endereco[:32-offset-index]
         #Seleciona o index na memoria
         index_mem = int(index) % n_sets
-
-        for ass in range(int(assoc)):
-            #Se der hit
-            aux = memory[index_mem][ass][0] 
-            if aux != 0:
-                if [index][ass][1] == tag:
-                    n_hits += 1
-                
-        
-
-                
-        
-
+        #pega 
+        bloco = memory[index_mem]
+        #testa se é hit:
+        teste = test_hit(tag,bloco,assoc)
+        #Se tem uma posicao livre adicionamos a tag nessa posicao 
+        if teste != -1 and teste != -2: 
+            memory[index_mem][teste][0] = 1 
+            memory[index_mem][teste][1] = tag 
+        elif teste == -1: 
+            posicao_retirada = random.randint(0, assoc)
+            memory[index][posicao_retirada] = tag     
         #Lê mais 4 posições 
         entrada = arquivo.read(4)
 
         
-
+#testa hit (retorna -2 se hit, -1 miss compulsorio e retorna posicao vazias miss normal)
+def test_hit(tag,bloco,assoc ):
+    global memory , n_hits, n_misses, n_misses_compulsorio 
+    count_info = 0 
+    posicao_livre = 0
+    for ass in range(assoc):
+        # se o bit validade for 1 e a tag for igual a buscada
+        if bloco[ass][0] == 1 and bloco[ass][1] == tag:
+            n_hit += 1 
+            return -2
+        elif bloco[ass][0] == 1: 
+            count_info += 1 
+        else: 
+            posicao_livre = ass 
     
-
+    if count_info == assoc:
+        n_misses_compulsorio +=1 
+        return -1
+    else: 
+        n_misses +=1 
+        return posicao_livre 
+    
+    
+            
+    
 
 	
