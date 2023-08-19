@@ -23,7 +23,7 @@ def main():
     flagOut = int(sys.argv[5])
     arquivoEntrada = sys.argv[6]
 
-
+    print(type(nsets))
 
     print("nsets =", nsets)
     print("bsize =", bsize)
@@ -34,7 +34,7 @@ def main():
 
     cache(nsets,assoc)
     calc_bits(nsets, bsize)
-    run(arquivoEntrada)
+    run(arquivoEntrada, nsets,assoc)
 
 
 if __name__ == '__main__':
@@ -61,7 +61,7 @@ def calc_bits(nsets, bsize):
     n_bits_tag = int (math.log2(nsets))
     n_bits_indice =int (32 - n_bits_offset - n_bits_tag)
 
-def run(arquivoEntrada):
+def run(arquivoEntrada, n_sets,assoc):
      
     global memory, n_bits_offset,n_bits_tag ,n_bits_indice ,n_hits ,n_misses ,n_misses_compulsorio, n_acess
 
@@ -80,6 +80,19 @@ def run(arquivoEntrada):
         index = endereco[32-n_bits_offset-n_bits_indice:32-offset]
         #Obter a tag 
         tag = endereco[:32-offset-index]
+        #Seleciona o index na memoria
+        index_mem = int(index) % n_sets
+
+        for ass in range(int(assoc)):
+            #Se der hit
+            aux = memory[index_mem][ass][0] 
+            if aux != 0:
+                if [index][ass][1] == tag:
+                    n_hits += 1
+                
+        
+
+                
         
 
         #Lê mais 4 posições 
