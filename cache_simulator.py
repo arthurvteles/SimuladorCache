@@ -23,7 +23,7 @@ def main():
     subst = sys.argv[4]
     flagOut = int(sys.argv[5])
     arquivoEntrada = sys.argv[6]
-
+    '''
     print(type(nsets))
 
     print("nsets =", nsets)
@@ -32,81 +32,72 @@ def main():
     print("subst =", subst)
     print("flagOut =", flagOut)
     print("arquivo =", arquivoEntrada)
-
+    '''
+    
+    #define a cache
     cache(nsets,assoc)
+    #calcula o numero de bits
     calc_bits(nsets, bsize)
     run(arquivoEntrada, nsets,assoc)
+    print_results() 
 
+def cache(nsets, assoc): 
+    global memory
 
-if __name__ == '__main__':
-	main()
-
-
-def cache(nsets, assoc):
-    global memory 
-
-    for ns in nsets:
+    for ns in range(nsets):
         sets = []
-        for ass in assoc:
-            block = []
-            #bit validade, tag
-            block.append([0, None])
-	    
-        sets.append(block)
+        for ass in range(assoc):
+            block = [0 ,False]
+            sets.append(block)
         memory.append(sets)
-    
-def calc_bits(nsets, bsize): 
+
+def calc_bits(nsets,bsize): 
     global n_bits_offset ,n_bits_tag ,n_bits_indice  
 
     n_bits_offset =int (math.log2(bsize))
     n_bits_tag = int (math.log2(nsets))
     n_bits_indice =int (32 - n_bits_offset - n_bits_tag)
+    #print(n_bits_indice)
 
-def run(arquivoEntrada, n_sets,assoc):
-     
+
+def run(arquivoEntrada, nsets,assoc):
     global memory, n_bits_offset,n_bits_tag ,n_bits_indice ,n_hits ,n_misses ,n_misses_compulsorio, n_acess
-
     arquivo = open(arquivoEntrada,'rb') 
     #lemos de 4 em 4 pois o endereço é de 32 bits
     entrada = arquivo.read(4)
     while entrada: 
-        n_acess += 1 
-        #converte cada linha em um inteiro 
+        n_acess += 1
         entrada_int = int.from_bytes(entrada, byteorder='big', signed=False)
         #transforma o número em um binario de 32 bits 
         endereco = format(entrada_int,'032b')
-        #Obter o offset 
-        offset = endereco[32-n_bits_offset:32]
-        #Obter o indice
-        index = endereco[32-n_bits_offset-n_bits_indice:32-offset]
-        #Obter a tag 
-        tag = endereco[:32-offset-index]
-        #Seleciona o index na memoria
-        index_mem = int(index) % n_sets
-        #pega 
-        bloco = memory[index_mem]
-        #testa se é hit:
-        teste = test_hit(tag,bloco,assoc)
+        #Obter o indice em decimal
+        indice = int("".join(list(endereco[(32-n_bits_offset-n_bits_indice):32-n_bits_offset])),2)
+        #Obter a tag em decimal 
+        tag = int("".join(list(endereco[:(32-n_bits_offset-n_bits_indice)])),2) 
+        indice_bloco = indice % nsets
+        #bloco[set][block][tag, validade]
+        bloco = memory[indice_bloco]
+        teste = teste_hit(tag, bloco,assoc)
         #Se tem uma posicao livre adicionamos a tag nessa posicao 
         if teste != -1 and teste != -2: 
-            memory[index_mem][teste][0] = 1 
-            memory[index_mem][teste][1] = tag 
+            bloco[teste][0] = 1 
+            bloco[teste][1] = tag 
         elif teste == -1: 
             posicao_retirada = random.randint(0, assoc)
-            memory[index][posicao_retirada] = tag     
-        #Lê mais 4 posições 
+            bloco[posicao_retirada] = tag     
+        #Lê mais 4 posições
         entrada = arquivo.read(4)
-
-        
-#testa hit (retorna -2 se hit, -1 miss compulsorio e retorna posicao vazias miss normal)
-def test_hit(tag,bloco,assoc ):
+      
+def teste_hit(tag,bloco,assoc):
     global memory , n_hits, n_misses, n_misses_compulsorio 
+    #contador para miss compulsorio 
     count_info = 0 
+    #guarda a posicao livre
     posicao_livre = 0
     for ass in range(assoc):
         # se o bit validade for 1 e a tag for igual a buscada
         if bloco[ass][0] == 1 and bloco[ass][1] == tag:
-            n_hit += 1 
+            n_hits += 1 
             return -2
         elif bloco[ass][0] == 1: 
             count_info += 1 
@@ -119,9 +110,15 @@ def test_hit(tag,bloco,assoc ):
     else: 
         n_misses +=1 
         return posicao_livre 
-    
-    
-            
-    
 
-	
+def print_results(): 
+    global n_acess, n_hits, n_misses,n_misses_compulsorio
+    
+    print(f'Numero de acessos {n_acess}\n')
+    print(f'Numero de hits : {n_hits}\n')
+    print(f'Numero de mises: {n_misses}\n')
+    print(f'Numero de misses compulosrios : {n_misses_compulsorio}')
+
+
+if __name__ == '__main__':
+	main()	
