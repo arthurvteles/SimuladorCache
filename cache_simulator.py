@@ -2,23 +2,34 @@ import sys
 import math 
 import random 
 
+from decimal import *
+
+# Informações da cache
 memory = []
 n_bits_offset = 0
 n_bits_tag = 0 
-n_bits_indice = 0
-n_hits = 0
-n_misses = 0
-n_misses_compulsorio = 0
-n_acess = 0
-n_misses_conflito = 0
-n_misses_capacidade = 0
+n_bits_index = 0
 nsets = 0 
-assoc = 0 
+bsize = 0
+assoc = 0
+subst = 'R' 
+flag_out = 1
+input_file = ' '
+fifo = []
+
+# Informações do Benchmark
+n_hits = 0
+n_acess = 0
+n_misses = 0
+n_misses_conflict = 0
+n_misses_capacity = 0
+n_misses_cold_start = 0
+
 def main():
-    global nsets, assoc
-    '''
+    global nsets, bsize, assoc, subst, flag_out, input_file
+
     if (len(sys.argv) != 7):
-        print("Numero de argumentos incorreto. Utilize:")
+        print("Número de argumentos incorreto! Utilize:")
         print("python cache_simulator.py <nsets> <bsize> <assoc> <substituição> <flag_saida> arquivo_de_entrada")
         exit(1)
 
@@ -26,132 +37,146 @@ def main():
     bsize = int(sys.argv[2])
     assoc = int(sys.argv[3])
     subst = sys.argv[4]
-    flagOut = int(sys.argv[5])
-    arquivoEntrada = sys.argv[6]
-    
-    print(type(nsets))
+    flag_out = int(sys.argv[5])
+    input_file = sys.argv[6]
 
-    print("nsets =", nsets)
-    print("bsize =", bsize)
-    print("assoc =", assoc)
-    print("subst =", subst)
-    print("flagOut =", flagOut)
-    print("arquivo =", arquivoEntrada)
-  
-    '''
-    #define a cache
-    nsets = 16
-    bsize = 2
-    assoc = 8
-    subst = "R"
-    flagOut = 1
-    arquivoEntrada = "bin_1000.bin"
+    build_cache()
+    run()
+    if flag_out == 0:
+        print_no_pattern()
+    else:
+        print_pattern()
 
-    cache(nsets,assoc)
-    #calcula o numero de bits
-    calc_bits(nsets, bsize)
-    run(arquivoEntrada, nsets,assoc)
-    print_results() 
-
-def cache(nsets, assoc): 
-    global memory
+def build_cache(): 
+    global memory, nsets, assoc, fifo
 
     for ns in range(nsets):
         sets = []
         for ass in range(assoc):
             block = [0 ,False]
             sets.append(block)
+        fifo.append(0)
         memory.append(sets)
     
 
-def calc_bits(nsets,bsize): 
-    global n_bits_offset ,n_bits_tag ,n_bits_indice  
+def calc_bits(): 
+    global nsets, bsize, n_bits_offset, n_bits_tag, n_bits_index
 
-    n_bits_offset =int (math.log2(bsize))
-    n_bits_tag = int (math.log2(nsets))
-    n_bits_indice =int (32 - n_bits_offset - n_bits_tag)
-    #print(n_bits_indice)
+    n_bits_offset = int(math.log2(bsize))
+    n_bits_index = int(math.log2(nsets))
+    n_bits_tag = int(32 - n_bits_offset - n_bits_tag)
 
 
-def run(arquivoEntrada, nsets,assoc):
-    global memory, n_bits_offset,n_bits_tag ,n_bits_indice ,n_hits ,n_misses ,n_misses_compulsorio, n_acess
-    arquivo = open(arquivoEntrada,'rb') 
-    #lemos de 4 em 4 pois o endereço é de 32 bits
+def run():
+    global fifo, input_file, nsets, assoc, memory, n_bits_offset, n_bits_tag, n_bits_index, n_hits, n_misses, n_misses_cold_start, n_acess
+    arquivo = open(input_file,'rb') 
+    # Ler de 4 em 4 pois é endereçada a byte
     entrada = arquivo.read(4)
     while entrada: 
         n_acess += 1
         entrada_int = int.from_bytes(entrada, byteorder='big', signed=False)
-        #transforma o número em um binario de 32 bits 
-        endereco = format(entrada_int,'032b')
-        #Obter o indice em decimal
-        indice = int("".join(list(endereco[(32-n_bits_offset-n_bits_indice):32-n_bits_offset])),2) 
-        #Obter a tag em decimal 
-        tag = int("".join(list(endereco[:(32-n_bits_offset-n_bits_indice)])),2) 
-        indice_bloco = indice % nsets
-        #bloco[set][block][tag, validade]
-        bloco = memory[indice_bloco]
-        teste = teste_hit(tag, bloco,assoc)
-        #Se tem uma posicao livre adicionamos a tag nessa posicao 
+        address = format(entrada_int,'032b')
+        
+        # Calcula offset, index e tag.
+        calc_bits()
+        
+        # Transforma as informações do endereco em tag e indice
+        reference = int("".join(list(address[(32-n_bits_offset-n_bits_index):32-n_bits_offset])),2) 
+        tag = int("".join(list(address[:(32-n_bits_offset-n_bits_index)])),2) 
+        index = reference % nsets
+        
+        set = memory[index]
+        teste = teste_hit(tag, set, assoc)
+
+        # Se tem uma posicao livre adicionamos a tag nessa posicao 
         if teste != -1 and teste != -2: 
-            memory[indice_bloco][teste][0] = 1 
-            memory[indice_bloco][teste][1] = tag 
+            memory[index][teste][0] = 1 
+            memory[index][teste][1] = tag 
         elif teste == -1: 
-            posicao_retirada = random.randint(0, assoc-1)
-            memory[indice_bloco][posicao_retirada][1] = tag    
-        #Lê mais 4 posições
+            if subst == 'R':
+                posicao_retirada = random.randint(0, assoc-1)
+                memory[index][posicao_retirada][1] = tag 
+            elif subst == 'F':
+                fPos = fifo[index]
+                memory[index][fPos][1] = tag 
+                if fPos == assoc-1:
+                    fifo[index] = 0
+                else:
+                    fifo[index] = fPos + 1
         entrada = arquivo.read(4)
       
 def teste_hit(tag,bloco,assoc):
-    global memory , n_hits, n_misses, n_misses_compulsorio , n_misses_conflito, n_misses_capacidade
-    #contador para miss
+    global memory , n_hits, n_misses, n_misses_cold_start , n_misses_conflict, n_misses_capacity
+    # Contador para miss
     count_info = 0 
-    #guarda a posicao livre
+    # Guarda a última posicao livre
     posicao_livre = 0
     
     for ass in range(assoc):
-        # se o bit validade for 1 e a tag for igual a buscada
+        # Hit
         if bloco[ass][0] == 1 and bloco[ass][1] == tag:
             n_hits += 1
             return -2
-        
-        print(bloco[ass][0])
-
-        if bloco[ass][0] == 1 :
-            count_info = count_info + 1 
-        else:
-            posicao_livre = ass 
+        # Miss
+        else: 
+            # Não há espaço livre
+            if bloco[ass][0] == 1 :
+                count_info = count_info + 1 
+            # Há espaço livre
+            else:
+                posicao_livre = ass 
 
     if count_info == assoc:
         n_misses +=1      
         if full_cache():
-            n_misses_capacidade += 1 
+            n_misses_capacity += 1 
         else:  
-            n_misses_conflito += 1 
+            n_misses_conflict += 1 
         return -1
-    
     else: 
-        n_misses += 1 ; 
-        n_misses_compulsorio += 1
+        n_misses += 1
+        n_misses_cold_start += 1
         return posicao_livre 
 
 
 def full_cache(): 
     global memory, nsets, assoc 
 
-    for ns in nsets :
-        for ass in assoc:
-            if memory[ns][ass][0]  == 0:
+    for ns in range(nsets) :
+        for ass in range(assoc):
+            if memory[ns][ass][0] == 0:
                 return False
     return True
 
-def print_results(): 
-    global n_acess, n_hits, n_misses,n_misses_compulsorio
-    print(f'Numero de acessos {n_acess}')
-    print(f'Numero de hits : {n_hits}')
-    print(f'Numero de mises: {n_misses}')
-    print(f'Numero de misses compulosrios : {n_misses_compulsorio}')
-    print(f'Taxa de hit: {n_hits/n_acess}')
+def print_no_pattern(): 
+    global n_acess, n_hits, n_misses, n_misses_cold_start, n_misses_capacity, n_misses_conflict
+    
+    print('[NÚMEROS]')
+    print(f'Acessos: {n_acess}')
+    print(f'Acertos: {n_hits}')
+    print(f'Faltas: {n_misses}')
+    print(f'Faltas compulsórias: {n_misses_cold_start}')
+    print(f'Faltas por capacidade: {n_misses_capacity}')
+    print(f'Faltas por conflito: {n_misses_conflict}')
 
+    print('[TAXAS]')
+    print(f'Acertos : {(n_hits/n_acess):.4f}')
+    print(f'Faltas: {(n_misses/n_acess):.4f}')
+    print(f'Faltas compulsórias : {(n_misses_cold_start/n_misses):.2f}')
+    print(f'Faltas por capacidade : {(n_misses_capacity/n_misses):.2f}')
+    print(f'Faltas por conflito : {(n_misses_conflict/n_misses):.2f}')
+
+def print_pattern(): 
+    global n_acess, n_hits, n_misses, n_misses_cold_start, n_misses_capacity, n_misses_conflict
+    
+    hit_rate = n_hits/n_acess
+    miss_rate = n_misses/n_acess
+    cold_start_rate = n_misses_cold_start/n_misses
+    capacity_rate = n_misses_capacity/n_misses
+    conflict_rate = n_misses_conflict/n_misses
+
+    print('{}, {:.4f}, {:.4f}, {:.2f}, {:.2f}, {:.2f}'
+          .format(n_acess, hit_rate, miss_rate, cold_start_rate, capacity_rate, conflict_rate))
 
 if __name__ == '__main__':
 	main()	
