@@ -28,6 +28,14 @@ n_misses_cold_start = 0
 def main():
     global nsets, bsize, assoc, subst, flag_out, input_file
 
+    # DEBUG
+    # nsets = 16
+    # bsize = 2
+    # assoc = 8
+    # subst = 'R'
+    # flag_out = 1
+    # input_file = 'bin_10000.bin'
+
     if (len(sys.argv) != 7):
         print("Número de argumentos incorreto! Utilize:")
         print("python cache_simulator.py <nsets> <bsize> <assoc> <substituição> <flag_saida> arquivo_de_entrada")
@@ -64,11 +72,13 @@ def calc_bits():
 
     n_bits_offset = int(math.log2(bsize))
     n_bits_index = int(math.log2(nsets))
-    n_bits_tag = int(32 - n_bits_offset - n_bits_tag)
+    n_bits_tag = int(32 - n_bits_offset - n_bits_index)
 
 
 def run():
-    global fifo, input_file, nsets, assoc, memory, n_bits_offset, n_bits_tag, n_bits_index, n_hits, n_misses, n_misses_cold_start, n_acess
+    global fifo, input_file, nsets, assoc, memory, n_bits_offset, n_bits_tag, n_bits_index, n_acess
+    global memory , n_hits, n_misses, n_misses_cold_start , n_misses_conflict, n_misses_capacity
+
     arquivo = open(input_file,'rb') 
     # Ler de 4 em 4 pois é endereçada a byte
     entrada = arquivo.read(4)
@@ -80,9 +90,13 @@ def run():
         # Calcula offset, index e tag.
         calc_bits()
         
+        #DEBUG 
+        debug_reference = "".join(list(address[n_bits_tag:32-n_bits_offset]))
+        debug_tag = "".join(list(address[:n_bits_tag]))
+
         # Transforma as informações do endereco em tag e indice
-        reference = int("".join(list(address[(32-n_bits_offset-n_bits_index):32-n_bits_offset])),2) 
-        tag = int("".join(list(address[:(32-n_bits_offset-n_bits_index)])),2) 
+        reference = int("".join(list(address[n_bits_tag:32-n_bits_offset])),2) 
+        tag = int("".join(list(address[:n_bits_tag])),2) 
         index = reference % nsets
         
         set = memory[index]
@@ -107,6 +121,7 @@ def run():
       
 def teste_hit(tag,bloco,assoc):
     global memory , n_hits, n_misses, n_misses_cold_start , n_misses_conflict, n_misses_capacity
+
     # Contador para miss
     count_info = 0 
     # Guarda a última posicao livre
@@ -128,7 +143,7 @@ def teste_hit(tag,bloco,assoc):
 
     if count_info == assoc:
         n_misses +=1      
-        if full_cache():
+        if is_cache_full():
             n_misses_capacity += 1 
         else:  
             n_misses_conflict += 1 
@@ -139,7 +154,7 @@ def teste_hit(tag,bloco,assoc):
         return posicao_livre 
 
 
-def full_cache(): 
+def is_cache_full(): 
     global memory, nsets, assoc 
 
     for ns in range(nsets) :
