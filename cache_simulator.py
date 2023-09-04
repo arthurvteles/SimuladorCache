@@ -15,8 +15,9 @@ assoc = 0
 subst = 'R' 
 flag_out = 1
 input_file = ' '
+fifo = []
 
-# Informações do BenchMark
+# Informações do Benchmark
 n_hits = 0
 n_acess = 0
 n_misses = 0
@@ -47,13 +48,14 @@ def main():
         print_pattern()
 
 def build_cache(): 
-    global memory, nsets, assoc
+    global memory, nsets, assoc, fifo
 
     for ns in range(nsets):
         sets = []
         for ass in range(assoc):
             block = [0 ,False]
             sets.append(block)
+        fifo.append(0)
         memory.append(sets)
     
 
@@ -66,53 +68,63 @@ def calc_bits():
 
 
 def run():
-    global input_file, nsets, assoc, memory, n_bits_offset, n_bits_tag, n_bits_index, n_hits, n_misses, n_misses_cold_start, n_acess
+    global fifo, input_file, nsets, assoc, memory, n_bits_offset, n_bits_tag, n_bits_index, n_hits, n_misses, n_misses_cold_start, n_acess
     arquivo = open(input_file,'rb') 
-    #lemos de 4 em 4 pois é endereçaca a byte
+    # Ler de 4 em 4 pois é endereçada a byte
     entrada = arquivo.read(4)
     while entrada: 
         n_acess += 1
         entrada_int = int.from_bytes(entrada, byteorder='big', signed=False)
-        #transforma o número em um binario de 32 bits 
-        endereco = format(entrada_int,'032b')
+        address = format(entrada_int,'032b')
         
         # Calcula offset, index e tag.
         calc_bits()
         
-        #Obter o indice em decimal
-        reference = int("".join(list(endereco[(32-n_bits_offset-n_bits_index):32-n_bits_offset])),2) 
-        #Obter a tag em decimal 
-        tag = int("".join(list(endereco[:(32-n_bits_offset-n_bits_index)])),2) 
+        # Transforma as informações do endereco em tag e indice
+        reference = int("".join(list(address[(32-n_bits_offset-n_bits_index):32-n_bits_offset])),2) 
+        tag = int("".join(list(address[:(32-n_bits_offset-n_bits_index)])),2) 
         index = reference % nsets
-        #bloco[set][block][tag, validade]
+        
         set = memory[index]
         teste = teste_hit(tag, set, assoc)
-        #Se tem uma posicao livre adicionamos a tag nessa posicao 
+
+        # Se tem uma posicao livre adicionamos a tag nessa posicao 
         if teste != -1 and teste != -2: 
             memory[index][teste][0] = 1 
             memory[index][teste][1] = tag 
         elif teste == -1: 
-            posicao_retirada = random.randint(0, assoc-1)
-            memory[index][posicao_retirada][1] = tag    
-        #Lê mais 4 posições
+            if subst == 'R':
+                posicao_retirada = random.randint(0, assoc-1)
+                memory[index][posicao_retirada][1] = tag 
+            elif subst == 'F':
+                fPos = fifo[index]
+                memory[index][fPos][1] = tag 
+                if fPos == assoc-1:
+                    fifo[index] = 0
+                else:
+                    fifo[index] = fPos + 1
         entrada = arquivo.read(4)
       
 def teste_hit(tag,bloco,assoc):
     global memory , n_hits, n_misses, n_misses_cold_start , n_misses_conflict, n_misses_capacity
-    #contador para miss
+    # Contador para miss
     count_info = 0 
-    #guarda a posicao livre
+    # Guarda a última posicao livre
     posicao_livre = 0
     
     for ass in range(assoc):
-        # se o bit validade for 1 e a tag for igual a buscada
+        # Hit
         if bloco[ass][0] == 1 and bloco[ass][1] == tag:
             n_hits += 1
             return -2
-        if bloco[ass][0] == 1 :
-            count_info = count_info + 1 
-        else:
-            posicao_livre = ass 
+        # Miss
+        else: 
+            # Não há espaço livre
+            if bloco[ass][0] == 1 :
+                count_info = count_info + 1 
+            # Há espaço livre
+            else:
+                posicao_livre = ass 
 
     if count_info == assoc:
         n_misses +=1      
@@ -122,7 +134,7 @@ def teste_hit(tag,bloco,assoc):
             n_misses_conflict += 1 
         return -1
     else: 
-        n_misses += 1 ; 
+        n_misses += 1
         n_misses_cold_start += 1
         return posicao_livre 
 
