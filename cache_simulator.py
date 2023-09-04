@@ -2,8 +2,6 @@ import sys
 import math 
 import random 
 
-from decimal import *
-
 # Informações da cache
 memory = []
 n_bits_offset = 0
@@ -76,8 +74,7 @@ def calc_bits():
 
 
 def run():
-    global fifo, input_file, nsets, assoc, memory, n_bits_offset, n_bits_tag, n_bits_index, n_acess
-    global memory , n_hits, n_misses, n_misses_cold_start , n_misses_conflict, n_misses_capacity
+    global memory, fifo, input_file, nsets, assoc, memory, n_bits_offset, n_bits_tag, n_bits_index, n_acess
 
     arquivo = open(input_file,'rb') 
     # Ler de 4 em 4 pois é endereçada a byte
@@ -91,8 +88,8 @@ def run():
         calc_bits()
         
         #DEBUG 
-        debug_reference = "".join(list(address[n_bits_tag:32-n_bits_offset]))
-        debug_tag = "".join(list(address[:n_bits_tag]))
+        # debug_reference = "".join(list(address[n_bits_tag:32-n_bits_offset]))
+        # debug_tag = "".join(list(address[:n_bits_tag]))
 
         # Transforma as informações do endereco em tag e indice
         reference = int("".join(list(address[n_bits_tag:32-n_bits_offset])),2) 
@@ -119,7 +116,7 @@ def run():
                     fifo[index] = fPos + 1
         entrada = arquivo.read(4)
       
-def teste_hit(tag,bloco,assoc):
+def teste_hit(tag, set, assoc):
     global memory , n_hits, n_misses, n_misses_cold_start , n_misses_conflict, n_misses_capacity
 
     # Contador para miss
@@ -128,18 +125,16 @@ def teste_hit(tag,bloco,assoc):
     posicao_livre = 0
     
     for ass in range(assoc):
-        # Hit
-        if bloco[ass][0] == 1 and bloco[ass][1] == tag:
+        if set[ass][0] == 0:
+            posicao_livre = ass 
+            n_misses += 1
+            n_misses_cold_start += 1
+            return posicao_livre 
+        elif set[ass][1] == tag:
             n_hits += 1
             return -2
-        # Miss
-        else: 
-            # Não há espaço livre
-            if bloco[ass][0] == 1 :
-                count_info = count_info + 1 
-            # Há espaço livre
-            else:
-                posicao_livre = ass 
+        else:
+            count_info += 1
 
     if count_info == assoc:
         n_misses +=1      
@@ -148,10 +143,6 @@ def teste_hit(tag,bloco,assoc):
         else:  
             n_misses_conflict += 1 
         return -1
-    else: 
-        n_misses += 1
-        n_misses_cold_start += 1
-        return posicao_livre 
 
 
 def is_cache_full(): 
