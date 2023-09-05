@@ -1,10 +1,6 @@
 # SimuladorCache
 
-### Repositório desenvolvido pro segundo trabalho prático de AOC2.
-
-### Observações 🚩
-
--   Integrantes: Arthur Teles e Mauricio Mucci 🤝
+### Repositório desenvolvido pro segundo trabalho prático de AOC II.
 
 ### Objetivos 🎯
 
@@ -15,9 +11,9 @@
 
     cache_simulator <nsets> <bsize> <assoc> <substituição> <flag_saida> arquivo_de_entrada
 
-*   Onde cada um destes campos possui o seguinte significado:
+-   Onde cada um destes campos possui o seguinte significado:
     -   cache_simulator - nome do arquivo de execução principal do simulador (todos devem usar este
-        nome, independente da linguagem escolhida;
+        nome, independente da linguagem escolhida);
     -   nsets - número de conjuntos na cache (número total de “linhas” ou “entradas” da cache);
     -   bsize - tamanho do bloco em bytes;
     -   assoc - grau de associatividade (número de vias ou blocos que cada conjunto possui);
@@ -30,3 +26,16 @@
 | Python |
 | ------ |
 | 3.11.4 |
+
+### Rodando o projeto ▶️
+
+-   Deve-se abrir o terminal na pasta do projeto e utilizar o seguinte comando:
+
+    python3 cache_simulator.py <nsets> <bsize> <assoc> <substituição> <flag_saida> arquivo_de_entrada
+
+-   Substituindo "<nsets> <bsize> <assoc> <substituição> <flag_saida> arquivo_de_entrada" pelos valores desejados.
+
+### Observações 🚩
+
+-   Integrantes: Arthur Teles e Mauricio Mucci 🤝
+-   Foram implementados dois algoritmos de substituição: Random e FIFO

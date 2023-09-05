@@ -92,9 +92,8 @@ def run():
         # debug_tag = "".join(list(address[:n_bits_tag]))
 
         # Transforma as informações do endereco em tag e indice
-        reference = int("".join(list(address[n_bits_tag:32-n_bits_offset])),2) 
+        index = int("".join(list(address[n_bits_tag:32-n_bits_offset])),2) 
         tag = int("".join(list(address[:n_bits_tag])),2) 
-        index = reference % nsets
         
         set = memory[index]
         teste = teste_hit(tag, set, assoc)
@@ -181,7 +180,7 @@ def print_pattern():
     capacity_rate = n_misses_capacity/n_misses
     conflict_rate = n_misses_conflict/n_misses
 
-    print('{}, {:.4f}, {:.4f}, {:.2f}, {:.2f}, {:.2f}'
+    print('{} {:.4f} {:.4f} {:.2f} {:.2f} {:.2f}'
           .format(n_acess, hit_rate, miss_rate, cold_start_rate, capacity_rate, conflict_rate))
 
 if __name__ == '__main__':
