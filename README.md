@@ -31,9 +31,9 @@
 
 -   Deve-se abrir o terminal na pasta do projeto e utilizar o seguinte comando:
 
-    python3 cache_simulator.py <'nsets' 'bsize' 'assoc' 'substituição' 'flag_saida' 'arquivo_de_entrada'
+    python3 cache_simulator.py 'nsets' 'bsize' 'assoc' 'substituição' 'flag_saida' 'arquivo_de_entrada'
 
--   Substituindo 'nsets' 'bsize' 'assoc' 'substituição' 'flag_saida' 'arquivo_de_entrada'> pelos valores desejados.
+-   Substituindo <'nsets' 'bsize' 'assoc' 'substituição' 'flag_saida' 'arquivo_de_entrada'> pelos valores desejados.
 
 ### Observações 🚩
 
