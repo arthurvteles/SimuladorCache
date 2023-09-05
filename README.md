@@ -9,7 +9,7 @@
 -   A configuração de cache deverá ser repassada por linha de comando e formatada com os seguintes
     parâmetros (o arquivo de entrada poderá ter extensão):
 
-    cache_simulator <nsets> <bsize> <assoc> <substituição> <flag_saida> arquivo_de_entrada
+-    cache_simulator 'nsets' 'bsize' 'assoc' 'substituição' 'flag_saida' 'arquivo_de_entrada'
 
 -   Onde cada um destes campos possui o seguinte significado:
     -   cache_simulator - nome do arquivo de execução principal do simulador (todos devem usar este
@@ -31,9 +31,9 @@
 
 -   Deve-se abrir o terminal na pasta do projeto e utilizar o seguinte comando:
 
-    python3 cache_simulator.py <nsets> <bsize> <assoc> <substituição> <flag_saida> arquivo_de_entrada
+    python3 cache_simulator.py <'nsets' 'bsize' 'assoc' 'substituição' 'flag_saida' 'arquivo_de_entrada'
 
--   Substituindo "<nsets> <bsize> <assoc> <substituição> <flag_saida> arquivo_de_entrada" pelos valores desejados.
+-   Substituindo 'nsets' 'bsize' 'assoc' 'substituição' 'flag_saida' 'arquivo_de_entrada'> pelos valores desejados.
 
 ### Observações 🚩
 
