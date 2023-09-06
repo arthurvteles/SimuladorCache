@@ -92,7 +92,10 @@ def run():
         # debug_tag = "".join(list(address[:n_bits_tag]))
 
         # Transforma as informações do endereco em tag e indice
-        index = int("".join(list(address[n_bits_tag:32-n_bits_offset])),2) 
+        if n_bits_index != 0:
+            index = int("".join(list(address[n_bits_tag:32-n_bits_offset])),2) 
+        else:
+            index = 0
         tag = int("".join(list(address[:n_bits_tag])),2) 
         
         set = memory[index]
